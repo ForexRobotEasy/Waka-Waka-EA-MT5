@@ -1,0 +1,128 @@
+
+//+------------------------------------------------------------------+
+//|                                Waka Waka EA MT5                   |
+//|                        Developer: Forex Robot Easy Team          |
+//|                        Website: forexroboteasy.com               |
+//+------------------------------------------------------------------+
+#property copyright 'Forex Robot Easy Team'
+#property link      'forexroboteasy.com'
+
+// Variables
+extern int GridSize = 10; // Grid size
+extern double LotSize = 0.01; // Lot size
+extern int MaxOrders = 10; // Maximum number of orders
+extern double TakeProfit = 100.0; // Take profit level
+extern double StopLoss = 50.0; // Stop loss level
+extern int Slippage = 3; // Maximum slippage
+extern int MagicNumber = 123456; // Magic number for identification
+extern bool TradeAUDCAD = true; // Trade AUDCAD
+extern bool TradeAUDNZD = true; // Trade AUDNZD
+extern bool TradeNZDCAD = true; // Trade NZDCAD
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+    // Set trade restrictions based on input parameters
+    if(!TradeAUDCAD)
+        MqlTradeRequest request;
+        request.action = TRADE_ACTION_CLOSE_BY;
+        request.magic = MagicNumber;
+        request.symbol = 'AUDCAD';
+        request.volume = LotSize;
+        request.type = ORDER_TYPE_SELL;
+        request.price = MarketInfo('AUDCAD', MODE_BID) - Slippage * Point;
+        request.sl = TakeProfit * Point;
+        request.tp = StopLoss * Point;
+        OrderSend(request);
+
+    if(!TradeAUDNZD)
+        MqlTradeRequest request;
+        request.action = TRADE_ACTION_CLOSE_BY;
+        request.magic = MagicNumber;
+        request.symbol = 'AUDNZD';
+        request.volume = LotSize;
+        request.type = ORDER_TYPE_SELL;
+        request.price = MarketInfo('AUDNZD', MODE_BID) - Slippage * Point;
+        request.sl = TakeProfit * Point;
+        request.tp = StopLoss * Point;
+        OrderSend(request);
+
+    if(!TradeNZDCAD)
+        MqlTradeRequest request;
+        request.action = TRADE_ACTION_CLOSE_BY;
+        request.magic = MagicNumber;
+        request.symbol = 'NZDCAD';
+        request.volume = LotSize;
+        request.type = ORDER_TYPE_SELL;
+        request.price = MarketInfo('NZDCAD', MODE_BID) - Slippage * Point;
+        request.sl = TakeProfit * Point;
+        request.tp = StopLoss * Point;
+        OrderSend(request);
+
+    return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+    // Check if any open positions
+    int totalOrders = OrdersTotal();
+    
+    // Place grid orders
+    if(totalOrders < MaxOrders)
+    {
+        for(int i = 1; i <= GridSize; i++)
+        {
+            double price = MarketInfo(Symbol(), MODE_ASK) + i * MarketInfo(Symbol(), MODE_POINT);
+            
+            if(price - OrderStopLoss() >= StopLoss * Point)
+            {
+                MqlTradeRequest request;
+                request.action = TRADE_ACTION_PENDING;
+                request.magic = MagicNumber;
+                request.symbol = Symbol();
+                request.volume = LotSize;
+                request.type = ORDER_TYPE_BUY_STOP;
+                request.price = price;
+                request.tp = TakeProfit * Point;
+                request.sl = StopLoss * Point;
+                OrderSend(request);
+            }
+        }
+    }
+    
+    // Close profitable orders
+    for(int i = 0; i < totalOrders; i++)
+    {
+        if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+        {
+            if(OrderProfit() >= TakeProfit * Point)
+            {
+                MqlTradeRequest request;
+                request.action = TRADE_ACTION_CLOSE;
+                request.magic = MagicNumber;
+                request.order = OrderTicket();
+                OrderSend(request);
+            }
+        }
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Custom functions                                                 |
+//+------------------------------------------------------------------+
+double OrderStopLoss()
+{
+    double stopLoss = 0;
+    
+    if(OrderSelect(0, SELECT_BY_POS, MODE_TRADES))
+    {
+        stopLoss = OrderStopLoss();
+    }
+    
+    return stopLoss;
+}
